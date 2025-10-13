@@ -22,4 +22,10 @@ router.beforeEach((to) => {
   if (to.meta.requiresAuth && !auth.user) return { name: 'login', query: { redirect: to.fullPath } }
   if (to.meta.roles && auth.user && !to.meta.roles.includes(auth.user.role)) return { name: 'home' }
 })
+router.beforeEach((to, _from, next) => {
+  const auth = useAuthStore()
+  const needAuth = Boolean(to.meta.requiresAuth)
+  if (needAuth && !auth.user) return next('/login')
+  next()
+})
 export default router

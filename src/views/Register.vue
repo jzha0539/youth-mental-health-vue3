@@ -1,71 +1,91 @@
 <template>
-  <section class="card" style="max-width:720px;margin:auto">
+  <form class="card" @submit.prevent="submit">
     <h2>Register</h2>
-    <form @submit.prevent="submit" class="grid cols-2">
-      <div>
-        <label class="label">Name</label>
-        <input class="input" v-model.trim="name" placeholder="Your name" />
-        <div class="error" v-if="nameError">{{ nameError }}</div>
-      </div>
-      <div>
-        <label class="label">Email</label>
-        <input class="input" v-model.trim="email" type="email" placeholder="you@example.com" />
-        <div class="error" v-if="emailError">{{ emailError }}</div>
-      </div>
-      <div>
-        <label class="label">Password</label>
-        <input class="input" v-model="password" type="password" placeholder="min 6 chars" />
-        <div class="error" v-if="passwordError">{{ passwordError }}</div>
-      </div>
-      <div>
-        <label class="label">Confirm Password</label>
-        <input class="input" v-model="confirm" type="password" placeholder="re-enter password" />
-        <div class="error" v-if="confirmError">{{ confirmError }}</div>
-      </div>
-      <div>
-        <label class="label">Role</label>
-        <select class="input" v-model="role">
-          <option value="user">User</option>
-          <option value="counselor">Counselor</option>
-        </select>
-      </div>
-      <div style="align-self:end"><button class="btn primary">Create account</button></div>
-      <div class="error" v-if="serverError">{{ serverError }}</div>
-    </form>
-  </section>
+
+    <label>Name
+      <input v-model="name" autocomplete="name" />
+    </label>
+    <p v-if="nameError" class="err">{{ nameError }}</p>
+
+    <label>Email
+      <input v-model="email" type="email" autocomplete="email" />
+    </label>
+    <p v-if="emailError" class="err">{{ emailError }}</p>
+
+    <label>Password
+      <input v-model="password" type="password" autocomplete="new-password" />
+    </label>
+    <p v-if="passwordError" class="err">{{ passwordError }}</p>
+
+    <label>Confirm Password
+      <input v-model="confirm" type="password" autocomplete="new-password" />
+    </label>
+    <p v-if="confirmError" class="err">{{ confirmError }}</p>
+
+    <label>Role
+      <select v-model="role">
+        <option>User</option>
+        <option>Admin</option>
+      </select>
+    </label>
+
+    <button type="submit" :disabled="submitting">
+      {{ submitting ? 'Creating...' : 'Create account' }}
+    </button>
+
+    <p v-if="serverError" class="err">{{ serverError }}</p>
+  </form>
 </template>
+
 <script setup>
 import { ref, computed } from 'vue'
-import { useAuthStore } from '../stores/auth'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '../stores/auth' 
+
+const router = useRouter()
+const auth = useAuthStore()
+
 const name = ref('')
 const email = ref('')
 const password = ref('')
 const confirm = ref('')
-const role = ref('user')
+const role = ref('User')
 const serverError = ref('')
-const auth = useAuthStore()
-const router = useRouter()
-const nameError = computed(() => !name.value ? 'Name is required.' : '')
+const submitting = ref(false)
+
+const nameError = computed(() => (!name.value ? 'Name is required.' : ''))
 const emailError = computed(() => {
   if (!email.value) return 'Email is required.'
   const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  if (!re.test(email.value)) return 'Please enter a valid email.'
-  return ''
+  return re.test(email.value) ? '' : 'Please enter a valid email.'
 })
 const passwordError = computed(() => {
   if (!password.value) return 'Password is required.'
-  if (password.value.length < 6) return 'Password must be at least 6 characters.'
-  return ''
+  return password.value.length < 6 ? 'Password must be at least 6 characters.' : ''
 })
-const confirmError = computed(() => password.value !== confirm.value ? 'Passwords do not match.' : '')
-async function submit(){
+const confirmError = computed(() => (password.value !== confirm.value ? 'Passwords do not match.' : ''))
+
+async function submit () {
   serverError.value = ''
   if (nameError.value || emailError.value || passwordError.value || confirmError.value) return
-  try{
-    auth.register({ name: name.value, email: email.value, password: password.value, role: role.value })
-    auth.login({ email: email.value, password: password.value })
+  submitting.value = true
+  try {
+    await auth.registerEmail(name.value, email.value, password.value)
+
     router.push('/dashboard')
-  }catch(e){ serverError.value = e.message }
+  } catch (e) {
+    serverError.value = e?.message ?? String(e)
+  } finally {
+    submitting.value = false
+  }
 }
 </script>
+
+<style scoped>
+.card { max-width: 640px; margin: 32px auto; display: grid; gap: 8px; }
+label { display: grid; gap: 4px; font-weight: 600; }
+input, select { padding: 10px 12px; border: 1px solid #d0d5dd; border-radius: 8px; }
+button { margin-top: 8px; padding: 10px 14px; border: 0; border-radius: 8px; background:#2563eb; color:#fff; font-weight:600; cursor:pointer; }
+button[disabled] { opacity: .6; cursor: not-allowed; }
+.err { color:#b42318; font-size: 13px; margin: 0; }
+</style>

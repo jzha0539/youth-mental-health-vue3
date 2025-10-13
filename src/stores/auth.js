@@ -1,24 +1,70 @@
+// src/stores/auth.js
 import { defineStore } from 'pinia'
-const USERS_KEY = 'ymh_users'
-const SESSION_KEY = 'ymh_session'
-function loadUsers(){ try{ return JSON.parse(localStorage.getItem(USERS_KEY))||[] }catch{ return [] } }
-function saveUsers(users){ localStorage.setItem(USERS_KEY, JSON.stringify(users)) }
+import { auth, googleProvider } from '../api/firebase' 
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  onAuthStateChanged,
+  signOut,
+  updateProfile
+} from 'firebase/auth'
+
 export const useAuthStore = defineStore('auth', {
-  state: () => ({ user: JSON.parse(localStorage.getItem(SESSION_KEY) || 'null') }),
+  state: () => ({
+    user: null,     
+    ready: false,   
+    _unsub: null
+  }),
+  getters: {
+    isAuthed: (s) => !!s.user
+  },
   actions: {
-    register({ name, email, password, role }){
-      const users = loadUsers()
-      if (users.find(u => u.email === email)) throw new Error('Email already registered.')
-      const newUser = { id: Date.now(), name, email, passwordHash: btoa(password), role }
-      users.push(newUser); saveUsers(users); return true
+    async registerEmail (name, email, password) {
+      const cred = await createUserWithEmailAndPassword(auth, email, password)
+      if (name) await updateProfile(cred.user, { displayName: name })
+      this.user = {
+        uid: cred.user.uid,
+        email: cred.user.email ?? '',
+        name: cred.user.displayName ?? name ?? ''
+      }
+      return this.user
     },
-    login({ email, password }){
-      const users = loadUsers()
-      const u = users.find(u => u.email === email && u.passwordHash === btoa(password))
-      if (!u) throw new Error('Invalid email or password.')
-      const sessionUser = { id: u.id, name: u.name, email: u.email, role: u.role }
-      this.user = sessionUser; localStorage.setItem(SESSION_KEY, JSON.stringify(sessionUser)); return true
+
+    async loginEmail (email, password) {
+      const cred = await signInWithEmailAndPassword(auth, email, password)
+      this.user = {
+        uid: cred.user.uid,
+        email: cred.user.email ?? '',
+        name: cred.user.displayName ?? ''
+      }
+      return this.user
     },
-    logout(){ this.user = null; localStorage.removeItem(SESSION_KEY) }
+
+    async loginGoogle () {
+      const cred = await signInWithPopup(auth, googleProvider)
+      this.user = {
+        uid: cred.user.uid,
+        email: cred.user.email ?? '',
+        name: cred.user.displayName ?? ''
+      }
+      return this.user
+    },
+
+    async logout () {
+      await signOut(auth)
+      this.user = null
+    },
+
+    
+    init () {
+      if (this._unsub) return
+      this._unsub = onAuthStateChanged(auth, (u) => {
+        this.user = u
+          ? { uid: u.uid, email: u.email ?? '', name: u.displayName ?? '' }
+          : null
+        this.ready = true
+      })
+    }
   }
 })

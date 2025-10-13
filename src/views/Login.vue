@@ -1,49 +1,55 @@
 <template>
-  <section class="card" style="max-width:560px;margin:auto">
+  <form class="card" @submit.prevent="submit">
     <h2>Login</h2>
-    <form @submit.prevent="submit" class="grid">
-      <div>
-        <label class="label">Email</label>
-        <input class="input" v-model.trim="email" type="email" placeholder="you@example.com" />
-        <div class="error" v-if="emailError">{{ emailError }}</div>
-      </div>
-      <div>
-        <label class="label">Password</label>
-        <input class="input" v-model="password" type="password" placeholder="••••••••" minlength="6" />
-        <div class="error" v-if="passwordError">{{ passwordError }}</div>
-      </div>
-      <button class="btn primary">Login</button>
-      <div class="error" v-if="serverError">{{ serverError }}</div>
-    </form>
-  </section>
+
+    <label>Email
+      <input v-model="email" type="email" autocomplete="email" />
+    </label>
+
+    <label>Password
+      <input v-model="password" type="password" autocomplete="current-password" />
+    </label>
+
+    <button type="submit" :disabled="submitting">
+      {{ submitting ? 'Signing in...' : 'Login' }}
+    </button>
+
+    <p v-if="serverError" class="err">{{ serverError }}</p>
+  </form>
 </template>
+
 <script setup>
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
-import { useRouter, useRoute } from 'vue-router'
-const auth = useAuthStore()
+
 const router = useRouter()
-const route = useRoute()
+const auth = useAuthStore()
+
 const email = ref('')
 const password = ref('')
 const serverError = ref('')
-const emailError = computed(() => {
-  if (!email.value) return 'Email is required.'
-  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  if (!re.test(email.value)) return 'Please enter a valid email.'
-  return ''
-})
-const passwordError = computed(() => {
-  if (!password.value) return 'Password is required.'
-  if (password.value.length < 6) return 'Password must be at least 6 characters.'
-  return ''
-})
-async function submit(){
+const submitting = ref(false)
+
+async function submit () {
   serverError.value = ''
-  if (emailError.value || passwordError.value) return
-  try{
-    auth.login({ email: email.value, password: password.value })
-    router.push(route.query.redirect || '/dashboard')
-  }catch(e){ serverError.value = e.message }
+  submitting.value = true
+  try {
+    await auth.loginEmail(email.value, password.value) 
+    router.push('/dashboard')
+  } catch (e) {
+    serverError.value = e?.message ?? String(e)
+  } finally {
+    submitting.value = false
+  }
 }
 </script>
+
+<style scoped>
+.card { max-width: 480px; margin: 32px auto; display: grid; gap: 8px; }
+label { display: grid; gap: 4px; font-weight: 600; }
+input { padding: 10px 12px; border: 1px solid #d0d5dd; border-radius: 8px; }
+button { margin-top: 8px; padding: 10px 14px; border: 0; border-radius: 8px; background:#2563eb; color:#fff; font-weight:600; cursor:pointer; }
+button[disabled] { opacity: .6; cursor: not-allowed; }
+.err { color:#b42318; font-size: 13px; margin: 0; }
+</style>
