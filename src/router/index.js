@@ -6,6 +6,7 @@ import Dashboard from '../views/Dashboard.vue'
 import Resources from '../views/Resources.vue'
 import Counselor from '../views/Counselor.vue'
 import GetHelp from '../views/GetHelp.vue'
+import ContactCounselor from '../views/ContactCounselor.vue'
 import { useAuthStore } from '../stores/auth'
 const routes = [
   { path: '/', name: 'home', component: Home },
@@ -15,6 +16,7 @@ const routes = [
   { path: '/resources', name: 'resources', component: Resources },
   { path: '/get-help', name: 'gethelp', component: GetHelp },
   { path: '/counselor', name: 'counselor', component: Counselor, meta: { requiresAuth: true, roles: ['counselor','admin'] } },
+  { path: '/contact', name: 'ContactCounselor', component: ContactCounselor, meta: { requiresAuth: true } },
 ]
 const router = createRouter({ history: createWebHistory(), routes })
 router.beforeEach((to) => {

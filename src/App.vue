@@ -7,6 +7,7 @@
         <RouterLink class="btn" to="/resources">Learn</RouterLink>
         <RouterLink class="btn" to="/dashboard" v-if="isAuthed">Dashboard</RouterLink>
         <RouterLink class="btn" to="/counselor" v-if="isCounselor">Counselor</RouterLink>
+        <RouterLink class="btn" to="/contact">Counselor</RouterLink>
         <RouterLink class="btn" to="/get-help">Get Help</RouterLink>
         <RouterLink class="btn" to="/login" v-if="!isAuthed">Login</RouterLink>
         <RouterLink class="btn" to="/register" v-if="!isAuthed">Register</RouterLink>
