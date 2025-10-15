@@ -15,14 +15,18 @@
         https://oauth2.googleapis.com
         https://accounts.google.com
         https://*.cloudfunctions.net
+        https://api.mapbox.com 
+        https://events.mapbox.com
         https://*.a.run.app;
       script-src 'self' 'unsafe-inline' 'unsafe-eval'
         https://www.gstatic.com
         https://www.google.com
         https://apis.google.com
         https://accounts.google.com/gsi/client;
-      img-src 'self' data: https:;
-      style-src 'self' 'unsafe-inline';
+      img-src 'self' data: https: blob: https://api.mapbox.com https://*.tiles.mapbox.com;
+      style-src 'self' 'unsafe-inline' https://api.mapbox.com;
+      font-src 'self' data: https://api.mapbox.com;
+      worker-src 'self' blob:;
       frame-src 'self'
         https://*.google.com
         https://recaptcha.google.com
