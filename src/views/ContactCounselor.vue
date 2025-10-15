@@ -87,7 +87,6 @@ function validateFile(f: File) {
   if (!allow.includes(f.type)) {
     throw new Error('Only PDF/PNG/JPG files are allowed.')
   }
-  // 5MB limit (示例，可按需调整)
   if (f.size > 5 * 1024 * 1024) {
     throw new Error('File must be ≤ 5MB.')
   }
@@ -96,7 +95,6 @@ function validateFile(f: File) {
 async function fileToBase64(f: File) {
   const buf = await f.arrayBuffer()
   const bytes = new Uint8Array(buf)
-  // 分块避免超出调用栈
   const chunk = 0x8000
   let binary = ''
   for (let i = 0; i < bytes.length; i += chunk) {

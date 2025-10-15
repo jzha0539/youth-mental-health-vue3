@@ -46,19 +46,17 @@ import { useAuthStore } from '@/stores/auth'
 const router = useRouter()
 const store = useAuthStore()
 
-// 统一一个表单对象
 const form = reactive({
   name: '',
   email: '',
   password: '',
   confirm: '',
-  role: 'student', // 默认 student；也可在下拉改为 counselor / admin
+  role: 'student', 
 })
 
 const submitting = ref(false)
 const serverError = ref('')
 
-// 校验
 const nameError = computed(() => (!form.name ? 'Name is required.' : ''))
 const emailError = computed(() => {
   if (!form.email) return 'Email is required.'
@@ -73,10 +71,9 @@ const confirmError = computed(() =>
   form.password !== form.confirm ? 'Passwords do not match.' : ''
 )
 
-// 提交
 async function submit() {
   serverError.value = ''
-  // 前端校验不通过就不提交
+ 
   if (nameError.value || emailError.value || passwordError.value || confirmError.value) {
     serverError.value = 'Please fix the errors above.'
     return
@@ -88,7 +85,7 @@ async function submit() {
       email: form.email,
       password: form.password,
       displayName: form.name,
-      role: String(form.role || '').toLowerCase(), // 归一化
+      role: String(form.role || '').toLowerCase(), 
     })
     router.push('/dashboard')
   } catch (e) {
