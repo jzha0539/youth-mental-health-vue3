@@ -1,5 +1,6 @@
-import { initializeApp, getApps } from 'firebase/app'
+import { initializeApp, getApps, getApp } from 'firebase/app'
 import { getAuth, GoogleAuthProvider } from 'firebase/auth'
+import { getFirestore } from 'firebase/firestore'
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FB_API_KEY,
@@ -7,6 +8,12 @@ const firebaseConfig = {
   projectId: import.meta.env.VITE_FB_PROJECT_ID,
 }
 
-export const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig)
+const app = getApps().length ? getApp() : initializeApp(firebaseConfig)
+
 export const auth = getAuth(app)
+export const db = getFirestore(app)
 export const googleProvider = new GoogleAuthProvider()
+
+export { app }
+
+

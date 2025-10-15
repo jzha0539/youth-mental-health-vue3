@@ -1,0 +1,94 @@
+:root{
+  --bg:#f7f8fb;
+  --card:#ffffff;
+  --text:#111827;
+  --muted:#6b7280;
+  --line:#e5e7eb;
+  --ring:#dbeafe;
+  --shadow:0 8px 20px rgba(16,24,40,.06);
+  --radius:16px;
+}
+
+html,body{ background:var(--bg); color:var(--text); }
+
+.page{
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+
+.page h1,.page h2{ font-weight: 700; margin: 4px 0 16px; }
+
+.grid{
+  display:grid; gap:16px;
+}
+@media (min-width: 900px){
+  .grid-2{ grid-template-columns: 1fr 1fr; }
+}
+
+.card{
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 18px;
+  box-shadow: var(--shadow);
+}
+
+.section-title{
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.input, .select, .textarea{
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  outline: none;
+  transition: box-shadow .2s, border-color .2s;
+}
+.input:focus,.select:focus,.textarea:focus{
+  border-color:#bfdbfe;
+  box-shadow: 0 0 0 4px var(--ring);
+}
+.textarea{ resize: vertical; }
+
+/* Buttons */
+.btn{
+  display:inline-flex; align-items:center; justify-content:center;
+  padding:8px 14px; border-radius: 12px;
+  border:1px solid var(--line); background:#fff; cursor:pointer;
+}
+.btn:hover{ background:#f9fafb; }
+.btn-primary{
+  background:#eef2ff; color:#1e40af; border-color:#e5e7eb; font-weight:600;
+}
+.btn:disabled{ opacity:.6; cursor:not-allowed; }
+
+/* Data table */
+.data-table{
+  width:100%; border-collapse: separate; border-spacing:0;
+  background:#fff; border:1px solid var(--line); border-radius: 12px; overflow:hidden;
+}
+.data-table thead th{
+  text-align:left; font-weight:600; font-size:14px; color:#374151;
+  background:#f9fafb; padding:10px 12px; border-bottom:1px solid var(--line);
+}
+.data-table tbody td{ padding:10px 12px; border-bottom:1px solid var(--line); }
+.data-table tbody tr:last-child td{ border-bottom:none; }
+
+/* Small helpers */
+.muted{ color:var(--muted); font-size:12px; }
+.stack{ display:flex; gap:10px; flex-wrap:wrap; }
+.block{ margin: 8px 0; }
+
+.btn.google {
+  background: #ffffff;
+  color: #1f2937;          
+  border: 1px solid #e5e7eb;
+}
+.btn.google:hover {
+  background: #f9fafb;
+}

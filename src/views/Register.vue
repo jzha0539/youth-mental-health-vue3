@@ -3,29 +3,30 @@
     <h2>Register</h2>
 
     <label>Name
-      <input v-model="name" autocomplete="name" />
+      <input v-model="form.name" autocomplete="name" />
     </label>
     <p v-if="nameError" class="err">{{ nameError }}</p>
 
     <label>Email
-      <input v-model="email" type="email" autocomplete="email" />
+      <input v-model="form.email" type="email" autocomplete="email" />
     </label>
     <p v-if="emailError" class="err">{{ emailError }}</p>
 
     <label>Password
-      <input v-model="password" type="password" autocomplete="new-password" />
+      <input v-model="form.password" type="password" autocomplete="new-password" />
     </label>
     <p v-if="passwordError" class="err">{{ passwordError }}</p>
 
     <label>Confirm Password
-      <input v-model="confirm" type="password" autocomplete="new-password" />
+      <input v-model="form.confirm" type="password" autocomplete="new-password" />
     </label>
     <p v-if="confirmError" class="err">{{ confirmError }}</p>
 
     <label>Role
-      <select v-model="role">
-        <option>User</option>
-        <option>Admin</option>
+      <select v-model="form.role">
+        <option value="student">Student</option>
+        <option value="counselor">Counselor</option>
+        <option value="admin">Admin</option>
       </select>
     </label>
 
@@ -33,48 +34,65 @@
       {{ submitting ? 'Creating...' : 'Create account' }}
     </button>
 
-    <p v-if="serverError" class="err">{{ serverError }}</p>
+    <p v-if="serverError" class="err" style="margin-top:6px">{{ serverError }}</p>
   </form>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { reactive, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAuthStore } from '../stores/auth' 
+import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
-const auth = useAuthStore()
+const store = useAuthStore()
 
-const name = ref('')
-const email = ref('')
-const password = ref('')
-const confirm = ref('')
-const role = ref('User')
-const serverError = ref('')
+// 统一一个表单对象
+const form = reactive({
+  name: '',
+  email: '',
+  password: '',
+  confirm: '',
+  role: 'student', // 默认 student；也可在下拉改为 counselor / admin
+})
+
 const submitting = ref(false)
+const serverError = ref('')
 
-const nameError = computed(() => (!name.value ? 'Name is required.' : ''))
+// 校验
+const nameError = computed(() => (!form.name ? 'Name is required.' : ''))
 const emailError = computed(() => {
-  if (!email.value) return 'Email is required.'
+  if (!form.email) return 'Email is required.'
   const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  return re.test(email.value) ? '' : 'Please enter a valid email.'
+  return re.test(form.email) ? '' : 'Please enter a valid email.'
 })
 const passwordError = computed(() => {
-  if (!password.value) return 'Password is required.'
-  return password.value.length < 6 ? 'Password must be at least 6 characters.' : ''
+  if (!form.password) return 'Password is required.'
+  return form.password.length < 6 ? 'Password must be at least 6 characters.' : ''
 })
-const confirmError = computed(() => (password.value !== confirm.value ? 'Passwords do not match.' : ''))
+const confirmError = computed(() =>
+  form.password !== form.confirm ? 'Passwords do not match.' : ''
+)
 
-async function submit () {
+// 提交
+async function submit() {
   serverError.value = ''
-  if (nameError.value || emailError.value || passwordError.value || confirmError.value) return
-  submitting.value = true
-  try {
-    await auth.registerEmail(name.value, email.value, password.value)
+  // 前端校验不通过就不提交
+  if (nameError.value || emailError.value || passwordError.value || confirmError.value) {
+    serverError.value = 'Please fix the errors above.'
+    return
+  }
 
+  try {
+    submitting.value = true
+    await store.register({
+      email: form.email,
+      password: form.password,
+      displayName: form.name,
+      role: String(form.role || '').toLowerCase(), // 归一化
+    })
     router.push('/dashboard')
   } catch (e) {
-    serverError.value = e?.message ?? String(e)
+    serverError.value = (e && e.message) || String(e)
   } finally {
     submitting.value = false
   }
