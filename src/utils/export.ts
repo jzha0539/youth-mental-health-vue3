@@ -1,21 +1,39 @@
 import Papa from 'papaparse'
 import jsPDF from 'jspdf'
-import 'jspdf-autotable'
+import autoTable from 'jspdf-autotable'  
 
-export function exportCSV(rows: any[], filename='data.csv') {
-  const csv = Papa.unparse(rows)
-  const blob = new Blob([csv], { type:'text/csv;charset=utf-8;' })
+function stamp() {
+  const d = new Date()
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}`
+}
+
+export function exportCSV(rows: any[], filename = 'data') {
+  const csv = Papa.unparse(rows || [])
+  const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' })
   const a = document.createElement('a')
-  a.href = URL.createObjectURL(blob); a.download = filename; a.click()
+  a.href = URL.createObjectURL(blob)
+  a.download = `${filename}_${stamp()}.csv`
+  document.body.appendChild(a)
+  a.click()
+  URL.revokeObjectURL(a.href)
+  a.remove()
 }
 
 export function exportPDF(
   rows: any[],
-  columns: { header:string; dataKey:string }[],
-  filename='data.pdf'
+  columns: { header: string; dataKey: string }[],
+  filename = 'data'
 ) {
-  const doc = new jsPDF()
-  // @ts-ignore
-  doc.autoTable({ columns, body: rows })
-  doc.save(filename)
+  const doc = new jsPDF({ orientation: 'p', unit: 'pt', format: 'a4' })
+
+  autoTable(doc, {
+    columns,
+    body: rows || [],
+    margin: 24,
+    styles: { fontSize: 10, cellPadding: 6 },
+    headStyles: { fillColor: [37, 99, 235] }, 
+  })
+
+  doc.save(`${filename}_${stamp()}.pdf`)
 }

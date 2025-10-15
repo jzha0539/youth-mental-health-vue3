@@ -34,35 +34,79 @@
       <RouterLink class="btn" to="/resources">Explore Learn resources</RouterLink>
     </div>
 
-    <!-- History -->
+    <!-- History (Interactive Table) -->
     <div class="card" style="grid-column:1/-1">
-      <h2 style="margin-top:0">Last 7 days</h2>
-      <div v-if="history.length===0" class="muted">No history yet.</div>
-      <table v-else class="table">
-        <thead>
-          <tr><th style="width:120px">Date</th><th>Mood</th><th>Sleep</th><th>Exercise</th><th>Screen</th></tr>
-        </thead>
-        <tbody>
-          <tr v-for="d in history" :key="d.day">
-            <td>{{ d.day }}</td>
-            <td>{{ d.mood || '-' }}</td>
-            <td>{{ d.sleep ?? '-' }} h</td>
-            <td>{{ d.exercise ?? '-' }} min</td>
-            <td>{{ d.screen ?? '-' }} h</td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="row">
+        <h2 style="margin:0">Last 7 days</h2>
+        <div class="spacer"></div>
+        <button class="btn outline" @click="exportHistoryCSV">Export CSV</button>
+        <button class="btn" style="margin-left:8px" @click="exportHistoryPDF">Export PDF</button>
+      </div>
+
+      <!-- Filters -->
+      <div class="filters">
+        <input v-model="searchAll" placeholder="Search all columns..." />
+        <input v-model="filterDate" placeholder="Filter date (YYYY-MM-DD)..." />
+        <select v-model="filterMood">
+          <option value="">All moods</option>
+          <option v-for="m in moods" :key="'f-'+m" :value="m">{{ m }}</option>
+        </select>
+        <div class="range">
+          <label>Sleep</label>
+          <input v-model.number="sleepMin" type="number" min="0" placeholder="min" />
+          <span>–</span>
+          <input v-model.number="sleepMax" type="number" min="0" placeholder="max" />
+          <span>h</span>
+        </div>
+        <div class="range">
+          <label>Exercise</label>
+          <input v-model.number="exMin" type="number" min="0" placeholder="min" />
+          <span>–</span>
+          <input v-model.number="exMax" type="number" min="0" placeholder="max" />
+          <span>min</span>
+        </div>
+        <div class="range">
+          <label>Screen</label>
+          <input v-model.number="scrMin" type="number" min="0" placeholder="min" />
+          <span>–</span>
+          <input v-model.number="scrMax" type="number" min="0" placeholder="max" />
+          <span>h</span>
+        </div>
+        <button class="btn" @click="resetFilters">Reset</button>
+      </div>
+
+      <!-- EasyDataTable -->
+      <EasyDataTable
+        :headers="headers"
+        :items="filteredRows"
+        :rows-per-page="10"
+        :sort-by="['date']"
+        :sort-type="['desc']"
+        show-index
+      />
+      <div class="muted" style="margin-top:6px">Tip: click a column header to sort.</div>
     </div>
   </section>
 </template>
 
 <script setup>
 import { ref, watch, computed, onMounted } from 'vue'
+import { RouterLink } from 'vue-router'
+import EasyDataTable from 'vue3-easy-data-table'
+import 'vue3-easy-data-table/dist/style.css'
+
 import { useAuthStore } from '@/stores/auth'
 import { loadToday, saveToday, loadLastNDays } from '@/api/profile'
+import { exportCSV, exportPDF } from '@/utils/export'
 
 const moods = ['🙂','😐','😟','😣','😄']
-
+const MOOD_LABEL = {
+  '😄': 'Great',
+  '🙂': 'Good',
+  '😐': 'Neutral',
+  '😟': 'Worried',
+  '😣': 'Stressed',
+}
 const mood     = ref('')
 const sleep    = ref(0)
 const exercise = ref(0)
@@ -85,12 +129,10 @@ async function persistToday() {
     exercise: Number.isFinite(exercise.value) ? exercise.value : null,
     screen: Number.isFinite(screen.value) ? screen.value : null,
   })
-
   history.value = await loadLastNDays(auth.user.uid, 7)
 }
 
 onMounted(async () => {
-
   if (!auth.user?.uid) {
     const stop = watch(() => auth.user?.uid, async (v) => {
       if (v) {
@@ -124,17 +166,118 @@ const recos = computed(() => {
   if (!out.length) out.push('Great job! Explore new skills in Learn.')
   return out
 })
+
+const headers = [
+  { text:'Date',      value:'date',     sortable:true },
+  { text:'Mood',      value:'mood',     sortable:true },
+  { text:'Sleep (h)', value:'sleep',    sortable:true },
+  { text:'Exercise',  value:'exercise', sortable:true },
+  { text:'Screen (h)',value:'screen',   sortable:true },
+]
+
+const tableRows = computed(() =>
+  (history.value || []).map(d => ({
+    date: d.day,
+    mood: d.mood || '',
+    sleep: Number(d.sleep ?? 0),
+    exercise: Number(d.exercise ?? 0),
+    screen: Number(d.screen ?? 0),
+  }))
+)
+
+const searchAll  = ref('')
+const filterDate = ref('')
+const filterMood = ref('')
+const sleepMin   = ref()
+const sleepMax   = ref()
+const exMin      = ref()
+const exMax      = ref()
+const scrMin     = ref()
+const scrMax     = ref()
+
+function inRange(v, min, max) {
+  if (min !== undefined && min !== null && min !== '' && v < Number(min)) return false
+  if (max !== undefined && max !== null && max !== '' && v > Number(max)) return false
+  return true
+}
+
+const filteredRows = computed(() => {
+  const all = tableRows.value
+  return all.filter(r => {
+    if (searchAll.value) {
+      const s = searchAll.value.toLowerCase()
+      const joined = `${r.date} ${r.mood} ${r.sleep} ${r.exercise} ${r.screen}`.toLowerCase()
+      if (!joined.includes(s)) return false
+    }
+    if (filterDate.value && !String(r.date).includes(filterDate.value)) return false
+    if (filterMood.value && r.mood !== filterMood.value) return false
+    if (!inRange(r.sleep,    sleepMin.value, sleepMax.value)) return false
+    if (!inRange(r.exercise, exMin.value,    exMax.value))    return false
+    if (!inRange(r.screen,   scrMin.value,   scrMax.value))    return false
+    return true
+  })
+})
+
+function resetFilters() {
+  searchAll.value = ''
+  filterDate.value = ''
+  filterMood.value = ''
+  sleepMin.value = sleepMax.value = undefined
+  exMin.value = exMax.value = undefined
+  scrMin.value = scrMax.value = undefined
+}
+
+const pdfColumns = [
+  { header:'Date', dataKey:'date' },
+  { header:'Mood', dataKey:'mood' },
+  { header:'Sleep (h)', dataKey:'sleep' },
+  { header:'Exercise (min)', dataKey:'exercise' },
+  { header:'Screen (h)', dataKey:'screen' },
+]
+
+function exportHistoryCSV() {
+  const rows = filteredRows.value.map(r => ({ ...r, mood: MOOD_LABEL[r.mood] || r.mood }))
+  exportCSV(rows, 'history_7days')
+}
+
+function exportHistoryPDF() {
+  const rows = filteredRows.value.map(r => ({ ...r, mood: MOOD_LABEL[r.mood] || r.mood }))
+  exportPDF(
+    rows,
+    [
+      { header: 'Date', dataKey: 'date' },
+      { header: 'Mood', dataKey: 'mood' },
+      { header: 'Sleep (h)', dataKey: 'sleep' },
+      { header: 'Exercise (min)', dataKey: 'exercise' },
+      { header: 'Screen (h)', dataKey: 'screen' },
+    ],
+    'history_7days'
+  )
+}
 </script>
 
 <style scoped>
-.table{
-  width:100%;
-  border-collapse: collapse;
-}
-.table th,.table td{
-  border-bottom:1px solid #eee;
-  padding:8px 10px;
-  text-align:left;
-}
+.table{ width:100%; border-collapse: collapse; }
+.table th,.table td{ border-bottom:1px solid #eee; padding:8px 10px; text-align:left; }
 .muted{ color:#888; }
+
+.row{ display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+.spacer{ flex:1; }
+
+.filters{
+  display:flex; flex-wrap:wrap; gap:8px; margin:8px 0 12px;
+}
+.filters input, .filters select{
+  padding:8px 10px; border:1px solid #d0d5dd; border-radius:8px; min-width: 180px;
+}
+.range{
+  display:flex; align-items:center; gap:6px; padding:6px 8px;
+  border:1px dashed #e5e7eb; border-radius:8px;
+}
+.range label{ font-size:12px; color:#555; }
+
+.btn.outline{
+  background:#fff; color:#1f2937; border:1px solid #cbd5e1;
+}
+.btn.outline:hover{ background:#f8fafc; }
 </style>
