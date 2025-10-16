@@ -17,3 +17,26 @@ a{color:var(--primary);text-decoration:none}
 .error{color:#b91c1c;font-size:0.85rem;margin-top:0.25rem}
 .badge{display:inline-block;padding:0.2rem 0.5rem;border-radius:999px;background:#eef2ff;color:#3730a3;font-size:0.75rem}
 footer{margin:3rem 0;color:var(--muted);font-size:0.9rem}
+
+.skip-link{
+  position: fixed;
+  left: 16px;
+  top: 10px;
+  transform: translateY(-160%);
+  transition: transform .15s ease;
+  background:#111827; color:#fff;
+  padding: 8px 12px;
+  border-radius: 999px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.18);
+  z-index: 10000;
+  outline: 3px solid #bfdbfe;
+}
+.skip-link:focus,
+.skip-link:focus-visible{
+  transform: translateY(0);
+}
+
+#main:focus{
+  outline: 3px solid #bfdbfe;
+  outline-offset: 4px;
+}
